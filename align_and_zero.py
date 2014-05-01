@@ -9,7 +9,7 @@ Substrate_Guess = (200, 200)
 
 
 
-def find_profilometer_center(axis, zStart, step, dwell, speed):
+def find_profilometer_center(axis, zStart, step, dwell, speed, kp):
     g.feed(15)
     g.abs_move(**{axis:zStart})
     g.feed(speed)
@@ -24,25 +24,25 @@ def find_profilometer_center(axis, zStart, step, dwell, speed):
     profilometer_middle = g.get_axis_pos(axis=axis)
     return (profilometer_middle)
     
-def get_z_ref(x, y, zStart, axis = 'A', find_mid = 'Yes'):
+def get_z_ref(x, y, zStart, axis = 'A', kp, find_mid = 'Yes'):
     g.feed(20)
     g.abs_move(x=x, y=y)
     g.feed(10)
     g.abs_move(**{axis:zStart})
     profilometer_middle = zStart
     if find_mid == 'Yes':
-        profilometer_middle = find_profilometer_center(axis = 'A', zStart = -70, step = 1, dwell = 0.1, speed = 5)    
+        profilometer_middle = find_profilometer_center(axis = 'A', zStart = -70, step = 1, dwell = 0.1, kp, speed = 5)    
     g.abs_move(**{axis:profilometer_middle})
     g.dwell(0.75)
     value = kp.read()
     profilometer_ref = profilometer_middle - value
     return (profilometer_ref)
     
-def edge_find(xStart, yStart, zStart, step1, step2, backstep, dwell, speed1, speed2, tolerance, direction='+x', find_mid = 'Yes', axis='A'):
+def edge_find(xStart, yStart, zStart, step1, step2, backstep, dwell, speed1, speed2, tolerance, kp, direction='+x', find_mid = 'Yes', axis='A'):
     g.feed(20)
     g.abs_move(x=xStart, y=yStart)
     if find_mid == 'Yes':
-        profilometer_middle = find_profilometer_center(axis = axis, zStart = -70, step = 1, dwell = 0.1, speed = 5)
+        profilometer_middle = find_profilometer_center(axis = axis, zStart = -70, step = 1, dwell = 0.1, kp, speed = 5)
     xstep1=0
     xstep2=0
     ystep1=0
@@ -146,7 +146,7 @@ def identify_substrate_location(xStart, yStart, zStart, axis, edges = 'All'):
     g.abs_move(x=xStart, y=yStart)   
     g.feed(20)
     g.abs_move(**{axis:zStart})
-    profilometer_middle = find_profilometer_center(axis = axis, zStart = zStart, step = 1, dwell = 0.1, speed = 5)
+    profilometer_middle = find_profilometer_center(axis = axis, zStart = zStart, step = 1, dwell = 0.1, kp, speed = 5)
     leftX= edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No')
     topY = edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='-y', find_mid = 'No')
     rightX= edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No')
@@ -258,7 +258,7 @@ def run_alignment_script(Substrate_xRef, Substrate_yRef, axis = 'A'):
    
    #load cal file
    
-   
+   # kp.disconnect  - Closes comport
    
    
    
