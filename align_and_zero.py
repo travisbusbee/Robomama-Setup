@@ -1,15 +1,16 @@
 from mecode.devices.keyence_profilometer import KeyenceProfilometer
+from mecode.devices.keyence_micrometer import KeyenceMicrometer
 from mecode import G
-kp = KeyenceProfilometer('COM<X>') 
-km = KeyenceMicrometer('COM<x>')
+kp = KeyenceProfilometer('COM3') 
+km = KeyenceMicrometer('COM8')
 g = G(direct_write=True)
-value = kp.read()
+#value = kp.read()
 Substrate_Guess = (200, 200)
 
 
 
 
-def find_profilometer_center(axis, zStart, step, dwell, speed, kp):
+def find_profilometer_center(kp, axis, zStart, step, dwell, speed):
     g.feed(15)
     g.abs_move(**{axis:zStart})
     g.feed(speed)
@@ -19,30 +20,33 @@ def find_profilometer_center(axis, zStart, step, dwell, speed, kp):
         g.move(**{axis:-step})
         g.dwell(dwell)
         value = kp.read()
-    g.move(**{axis:-value})
+    g.dwell(1.5)
+    value = kp.read()
+    g.move(**{axis:value})
+    g.dwell(1.5)
     value = kp.read()
     profilometer_middle = g.get_axis_pos(axis=axis)
     return (profilometer_middle)
     
-def get_z_ref(x, y, zStart, axis = 'A', kp, find_mid = 'Yes'):
+def get_z_ref(x, y, zStart, kp, axis = 'D', find_mid = 'Yes'):
     g.feed(20)
     g.abs_move(x=x, y=y)
     g.feed(10)
     g.abs_move(**{axis:zStart})
     profilometer_middle = zStart
     if find_mid == 'Yes':
-        profilometer_middle = find_profilometer_center(axis = 'A', zStart = -70, step = 1, dwell = 0.1, kp, speed = 5)    
+        profilometer_middle = find_profilometer_center(kp, axis = 'D', zStart = -70, step = 1, dwell = 0.1,  speed = 5)    
     g.abs_move(**{axis:profilometer_middle})
     g.dwell(0.75)
     value = kp.read()
-    profilometer_ref = profilometer_middle - value
+    profilometer_ref = profilometer_middle + value
     return (profilometer_ref)
     
-def edge_find(xStart, yStart, zStart, step1, step2, backstep, dwell, speed1, speed2, tolerance, kp, direction='+x', find_mid = 'Yes', axis='A'):
+def edge_find(kp, xStart, yStart, zStart, step1, step2, backstep, dwell, speed1, speed2, tolerance,  direction='+x', find_mid = 'Yes', axis='D'):
     g.feed(20)
     g.abs_move(x=xStart, y=yStart)
     if find_mid == 'Yes':
-        profilometer_middle = find_profilometer_center(axis = axis, zStart = -70, step = 1, dwell = 0.1, kp, speed = 5)
+        profilometer_middle = find_profilometer_center(kp, axis = axis, zStart = zStart, step = 1, dwell = 0.1, speed = 5)
     xstep1=0
     xstep2=0
     ystep1=0
@@ -87,10 +91,12 @@ def edge_find(xStart, yStart, zStart, step1, step2, backstep, dwell, speed1, spe
 def get_xyz_offset(axis, x, y, zStart, floor, speed_fast, speed_slow, zStep1, zStep2, backstep, downstep, dwell, sweep_range, sweep_speed):
     g.set_valve(num = 7, value = 0)
     g.feed(30)
+    km.get_xy() 
     #Initialize communication with keyence micrometer
     g.abs_move(x=x, y=y)
     g.abs_move(**{axis:zStart})
     g.feed(speed_fast)
+    value = km.read(1)
     while value is None:
         g.move(**{axis:-zStep1})
         g.dwell(dwell)
@@ -101,6 +107,7 @@ def get_xyz_offset(axis, x, y, zStart, floor, speed_fast, speed_slow, zStep1, zS
             raise RuntimeError('next step will break through the set floor')
     g.move(**{axis:backstep})   
     g.feed(speed_slow)  
+    value = km.read(1)
     while value is None:
         g.move(**{axis:-zStep2})
         g.dwell(dwell)
@@ -110,8 +117,9 @@ def get_xyz_offset(axis, x, y, zStart, floor, speed_fast, speed_slow, zStep1, zS
             value = None
             raise RuntimeError('next step will break through the set floor')
     g.move(**{axis:-downstep})
-    g.dwell(0.75)    
-    (x_offset, y_offset) = km.get_XY()
+    g.dwell(0.75)   
+    
+    (x_offset, y_offset) = km.read('both')
     g.set_valve(num = 7, value = 1)
     km.send('PW,4')
     g.move(x=-x_offset, y=-y_offset)
@@ -136,24 +144,24 @@ def get_xyz_offset(axis, x, y, zStart, floor, speed_fast, speed_slow, zStep1, zS
     return (x,x_offset), (y, y_offset), (z_axis_position, z_min)    
     #to get out (x,x_offset), (y, y_offset), (z_axis_position, z_min)=get_xyz_offset()
 
-def xy_align_profilometer(axis='A'):
-    topY = edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='-y', find_mid = 'Yes', axis = axis) 
-    leftX = edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No', axis = axis)
+def xy_align_profilometer(axis='D'):
+    topY = edge_find(kp, xStart=39.5, yStart=330.5, zStart =-88 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0.1, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='-y', find_mid = 'Yes', axis = axis) 
+    leftX = edge_find(kp, xStart=73, yStart=319, zStart =-88 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0.1, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='-x', find_mid = 'No', axis = axis)
     return (leftX, topY)
-
+    #edge_find(kp, xStart, yStart, zStart, step1, step2, backstep, dwell, speed1, speed2, tolerance,  direction='+x', find_mid = 'Yes', axis='D')
 def identify_substrate_location(xStart, yStart, zStart, axis, edges = 'All'):
     g.feed(35)
     g.abs_move(x=xStart, y=yStart)   
     g.feed(20)
     g.abs_move(**{axis:zStart})
-    profilometer_middle = find_profilometer_center(axis = axis, zStart = zStart, step = 1, dwell = 0.1, kp, speed = 5)
+    profilometer_middle = find_profilometer_center(kp, axis = axis, zStart = zStart, step = 1, dwell = 0.1,  speed = 5)
     leftX= edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No')
     topY = edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='-y', find_mid = 'No')
     rightX= edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No')
     bottomY= edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No')
     return (leftX, topY), (rightX, bottomY), (profilometer_middle)
     
-def get_substrate_ref(xRef, yRef, zStart, axis = 'A'):            
+def get_substrate_ref(xRef, yRef, zStart, axis = 'D'):            
     g.feed(30)
     g.abs_move(x=xRef, y=yRef)
     g.feed(10)
@@ -234,7 +242,7 @@ def nozzle_change(nozzles = 'ab'):
     else:
         g.write('; ---------- input a real nozzle change input...ya idiot--------')                                                                              
                                                                                                                                                                                                                                        
-def run_alignment_script(Substrate_xRef, Substrate_yRef, axis = 'A'):
+def run_alignment_script(Substrate_xRef, Substrate_yRef, axis = 'D'):
    (Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(axis=axis, x=586.075, y=367.8285, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)     
    #move to safe home
    
@@ -262,9 +270,12 @@ def run_alignment_script(Substrate_xRef, Substrate_yRef, axis = 'A'):
    
    
    
+(profilometer_x_groove_new, profilometer_y_groove_new) = xy_align_profilometer(axis = 'D')
+#profilometer_center = find_profilometer_center(kp, axis = 'D', zStart = -84, step = 1, dwell = 0.2,  speed = 5)   
+#(Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(axis='B', x=482.32, y=366.967, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)    
+print profilometer_y_groove_new
    
-   
-   
-   
-   
+kp.disconnect()   
+km.disconnect()
+  
    
