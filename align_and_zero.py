@@ -161,17 +161,19 @@ def identify_substrate_location(xStart, yStart, zStart, axis, edges = 'All'):
     bottomY= edge_find(xStart=100, yStart=100, zStart =-70 , step1 = 0.75 , step2 = 0.1, backstep=1, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No')
     return (leftX, topY), (rightX, bottomY), (profilometer_middle)
     
-def get_substrate_ref(xRef, yRef, zStart, axis = 'D'):            
+def get_substrate_ref(xRef, yRef, zStart, axis = 'D', find_center = 'Yes'):            
     g.feed(30)
     g.abs_move(x=xRef, y=yRef)
     g.feed(10)
     g.abs_move(**{axis:zStart})
+    if find_center == 'Yes':
+        profilometer_middle = find_profilometer_center(kp, axis = axis, zStart = zStart, step = 1, dwell = 0.1,  speed = 5)        
     g.dwell(0.75)
     value = kp.read() 
     g.move(**{axis:-value})
     z_axis_position = g.get_axis_pos(axis=axis)
     value = kp.read() 
-    prof_substrate = z_axis_position - value
+    prof_substrate = z_axis_position + value
     return (prof_substrate)
 
 
