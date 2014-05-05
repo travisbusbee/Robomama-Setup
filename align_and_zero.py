@@ -28,7 +28,7 @@ def find_profilometer_center(kp, axis, zStart, step, dwell, speed):
     profilometer_middle = g.get_axis_pos(axis=axis)
     return (profilometer_middle)
     
-def get_z_ref(x, y, zStart, kp, axis = 'D', find_mid = 'Yes'):
+def get_z_ref(kp, x, y, zStart,  axis = 'D', find_mid = 'Yes'):
     g.feed(20)
     g.abs_move(x=x, y=y)
     g.feed(10)
@@ -252,21 +252,35 @@ def nozzle_change(nozzles = 'ab'):
     else:
         g.write('; ---------- input a real nozzle change input...ya idiot--------')                                                                              
                                                                                                                                                                                                                                        
-def run_alignment_script(Substrate_xRef, Substrate_yRef, axis = 'D'):
-   (Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(axis=axis, x=586.075, y=367.8285, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)     
+def run_alignment_script(Substrate_xRef = 37, Substrate_yRef = -26, x_zref = 54.588, y_zref = 280.322 , start_zref = -94, axis = 'D'):
+   #(Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(axis=axis, x=586.075, y=367.8285, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)     
    #move to safe home
+   g.feed(25)
+   g.abs_move(**{axis:-40})
    
    # find grooves on alignment plate
    (profilometer_x_groove_new, profilometer_y_groove_new) = xy_align_profilometer(kp, axis = axis)
    
+   g.feed(25)
+   g.abs_move(**{axis:-40})
+   
    #Profile z_ref location
-   (ref_prof_position) = get_z_ref(x, y, zStart, axis = axis, find_mid = 'Yes')
+   (ref_prof_position) = get_z_ref(kp, x = x_zref , y=y_zref , zStart=start_zref , axis = axis, find_mid = 'Yes')
+   
+   g.feed(25)
+   g.abs_move(**{axis:-40})
    
    #find substrate boundaries
-   (substrate_left_x, substrate_top_y), (substrate_right_x, substrate_bottom_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart, yStart, zStart = ref_axis_pos, axis = axis, edges = 'All')
+   (substrate_left_x, substrate_top_y), (substrate_right_x, substrate_bottom_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart = 51.20, yStart = 36.46, zStart = -89.9, axis = axis, edges = 'All')
+   
+   g.feed(25)
+   g.abs_move(**{axis:-40})
    
    #move to substrate reference and obtain profilometer ref
-   (substrate_z_pos) = get_substrate_ref(kp, xRef=Substrate_xRef, yRef=Substrate_yRef, zStart=prof_substrate_start, axis = axis)
+   (substrate_z_pos) = get_substrate_ref(kp, xRef= substrate_left_x + Substrate_xRef, yRef=substrate_top_y + Substrate_yRef, zStart=prof_substrate_start, axis = axis)
+   
+   g.feed(25)
+   g.abs_move(**{axis:-40})
    
    #calculate relative axis xyz positions
    
@@ -277,9 +291,15 @@ def run_alignment_script(Substrate_xRef, Substrate_yRef, axis = 'D'):
    #load cal file
    
    # kp.disconnect  - Closes comport
-   
-(substrate_left_x, substrate_top_y), (substrate_right_x, substrate_bottom_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart = 51.20, yStart = 36.46, zStart = -89.9, axis = 'D', edges = 'All')   
-print (substrate_left_x, substrate_top_y)   
+   print 'prof grooves location: ' (profilometer_x_groove_new, profilometer_y_groove_new)
+   print 'prof ref z: ' (ref_prof_position)
+   print 'substrate orgin: '(substrate_left_x, substrate_top_y)
+   print 'prof substrate z: ' (substrate_z_pos)
+
+run_alignment_script(Substrate_xRef = 37, Substrate_yRef = -27, axis = 'D')   
+         
+#(substrate_left_x, substrate_top_y), (substrate_right_x, substrate_bottom_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart = 51.20, yStart = 36.46, zStart = -89.9, axis = 'D', edges = 'All')   
+#print (substrate_left_x, substrate_top_y)   
 #(profilometer_x_groove_new, profilometer_y_groove_new) = xy_align_profilometer(kp, axis = 'D')
 #profilometer_center = find_profilometer_center(kp, axis = 'D', zStart = -84, step = 1, dwell = 0.2,  speed = 5)   
 #(Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(axis='B', x=482.32, y=366.967, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)    
