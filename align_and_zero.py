@@ -1,8 +1,10 @@
 from mecode.devices.keyence_profilometer import KeyenceProfilometer
 from mecode.devices.keyence_micrometer import KeyenceMicrometer
+from mecode.devices.efd_pressure_box import EFDPressureBox
 from mecode import G
 kp = KeyenceProfilometer('COM3') 
 km = KeyenceMicrometer('COM8')
+pb = EFDPressureBox('COM4')
 g = G(direct_write=True, print_lines=False)
 #value = kp.read()
 Substrate_Guess = (200, 200)
@@ -32,7 +34,7 @@ def find_profilometer_center(kp, axis, zStart, step, dwell, speed, floor):
     return (profilometer_middle)
     
 def get_z_ref(kp, x, y, zStart,  axis = 'D', find_mid = 'Yes'):
-    g.feed(20)
+    g.feed(40)
     g.abs_move(x=x, y=y)
     g.feed(10)
     g.abs_move(**{axis:zStart})
@@ -40,13 +42,14 @@ def get_z_ref(kp, x, y, zStart,  axis = 'D', find_mid = 'Yes'):
     if find_mid == 'Yes':
         profilometer_middle = find_profilometer_center(kp, axis = 'D', zStart = zStart, step = 1, dwell = 0.1,  speed = 5, floor = -100)    
     g.abs_move(**{axis:profilometer_middle})
-    g.dwell(0.75)
+    g.dwell(1.5)
     value = kp.read()
+    profilometer_middle = g.get_axis_pos(axis=axis)
     profilometer_ref = profilometer_middle + value
     return (profilometer_ref)
     
 def edge_find(kp, xStart, yStart, zStart, step1, step2, backstep, dwell, speed1, speed2, tolerance,  direction='+x', find_mid = 'Yes', axis='D'):
-    g.feed(20)
+    g.feed(40)
     g.abs_move(x=xStart, y=yStart)
     if find_mid == 'Yes':
         profilometer_middle = find_profilometer_center(kp, axis = axis, zStart = zStart, step = 1, dwell = 0.1, speed = 5, floor = -100)
@@ -103,7 +106,7 @@ def edge_find(kp, xStart, yStart, zStart, step1, step2, backstep, dwell, speed1,
 
 def get_xyz_offset(km, axis, x, y, zStart, floor, speed_fast, speed_slow, zStep1, zStep2, backstep, downstep, dwell, sweep_range, sweep_speed):
     g.set_valve(num = 7, value = 0)
-    g.feed(30)
+    g.feed(40)
     km.get_xy() 
     #Initialize communication with keyence micrometer
     g.abs_move(x=x, y=y)
@@ -153,6 +156,7 @@ def get_xyz_offset(km, axis, x, y, zStart, floor, speed_fast, speed_slow, zStep1
         z_min = km.stop_z_min()
     g.feed(25)
     g.abs_move(**{axis:-0.2})
+    g.set_valve(num = 7, value = 0)
     return (x,x_offset), (y, y_offset), (z_axis_position, z_min)    
     #to get out (x,x_offset), (y, y_offset), (z_axis_position, z_min)=get_xyz_offset()
 
@@ -162,19 +166,19 @@ def xy_align_profilometer(kp, axis='D'):
     return (float(leftX), float(topY))
     #edge_find(kp, xStart, yStart, zStart, step1, step2, backstep, dwell, speed1, speed2, tolerance,  direction='+x', find_mid = 'Yes', axis='D')
 def identify_substrate_location(kp, xStart, yStart, zStart, axis, edges = 'All'):
-    g.feed(35)
+    g.feed(40)
     g.abs_move(x=xStart, y=yStart)   
     g.feed(20)
     g.abs_move(**{axis:zStart})
     profilometer_middle = find_profilometer_center(kp, axis = axis, zStart = zStart, step = 1, dwell = 0.1,  speed = 5, floor = -100)
-    leftX= edge_find(kp, xStart=xStart, yStart=yStart, zStart =profilometer_middle , step1 = 0.75 , step2 = 0.1, backstep=10, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='-x', find_mid = 'No')
-    topY = edge_find(kp, xStart=xStart, yStart=yStart, zStart =profilometer_middle , step1 = 0.75 , step2 = 0.1, backstep=10, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+y', find_mid = 'No')
-    rightX= edge_find(kp, xStart=xStart, yStart=yStart, zStart =profilometer_middle , step1 = 0.75 , step2 = 0.1, backstep=10, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No')
-    bottomY= edge_find(kp, xStart=xStart, yStart=yStart, zStart =profilometer_middle , step1 = 0.75 , step2 = 0.1, backstep=10, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='-y', find_mid = 'No')
-    return (leftX, topY), (rightX, bottomY), (profilometer_middle)
+    leftX= edge_find(kp, xStart=xStart, yStart=yStart, zStart =profilometer_middle , step1 = 0.4 , step2 = 0.1, backstep=10, dwell = 0, speed1 = 3, speed2 = 1, tolerance = 0.15, direction='-x', find_mid = 'No')
+    topY = edge_find(kp, xStart=xStart, yStart=yStart, zStart =profilometer_middle , step1 = 0.4 , step2 = 0.1, backstep=10, dwell = 0, speed1 = 3, speed2 = 1, tolerance = 0.15, direction='+y', find_mid = 'No')
+    #rightX= edge_find(kp, xStart=xStart, yStart=yStart, zStart =profilometer_middle , step1 = 0.75 , step2 = 0.1, backstep=10, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='+x', find_mid = 'No')
+    #bottomY= edge_find(kp, xStart=xStart, yStart=yStart, zStart =profilometer_middle , step1 = 0.75 , step2 = 0.1, backstep=10, dwell = 0, speed1 = 5, speed2 = 1, tolerance = 0.15, direction='-y', find_mid = 'No')
+    return (leftX, topY), (profilometer_middle)
     
 def get_substrate_ref(kp, xRef, yRef, zStart, axis = 'D', find_center = 'Yes'):            
-    g.feed(30)
+    g.feed(40)
     g.abs_move(x=xRef, y=yRef)
     g.feed(10)
     g.abs_move(**{axis:zStart})
@@ -183,6 +187,7 @@ def get_substrate_ref(kp, xRef, yRef, zStart, axis = 'D', find_center = 'Yes'):
     g.dwell(0.75)
     value = kp.read() 
     g.move(**{axis:-value})
+    g.dwell(1)
     z_axis_position = g.get_axis_pos(axis=axis)
     value = kp.read() 
     prof_substrate = z_axis_position + value
@@ -293,24 +298,24 @@ def run_alignment_script(align_A, align_B, align_C, align_D,  zSensor_Plate_offs
        
    #get_xyz_offset(km, axis, x, y, zStart, floor, speed_fast, speed_slow, zStep1, zStep2, backstep, downstep, dwell, sweep_range, sweep_speed)
    #move to safe home
-   g.feed(25)
+   g.feed(40)
    #g.abs_move(**{axis:-15})
    g.write('POSOFFSET CLEAR X Y U A B C D')
    g.abs_move(A=-0.5, B=-0.5, C=-0.5, D=-0.5)
    if align_A =='yes':
-       (Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(km, axis='A', x=586.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)
+       (Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(km, axis='A', x=586.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1, sweep_speed = 0.025)
    else:
        (Ax,Ax_offset) = (Ay, Ay_offset) = (Az_axis_position, Az_min) = (0, 0)
    if align_B =='yes':
-       (Bx,Bx_offset), (By, By_offset), (Bz_axis_position, Bz_min) = get_xyz_offset(km, axis='B', x=482.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)
+       (Bx,Bx_offset), (By, By_offset), (Bz_axis_position, Bz_min) = get_xyz_offset(km, axis='B', x=482.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.1)
    else:
        (Bx,Bx_offset) = (By, By_offset) = (Bz_axis_position, Bz_min) = (0, 0)
    if align_C =='yes':
-       (Cx,Cx_offset), (Cy, Cy_offset), (Cz_axis_position, Cz_min) = get_xyz_offset(km, axis='C', x=378.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)
+       (Cx,Cx_offset), (Cy, Cy_offset), (Cz_axis_position, Cz_min) = get_xyz_offset(km, axis='C', x=378.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.1)
    else:
        (Cx,Cx_offset) = (Cy, Cy_offset) = (Cz_axis_position, Cz_min) = (0, 0)
    if align_D =='yes':
-       (Dx,Dx_offset), (Dy, Dy_offset), (Dz_axis_position, Dz_min) = get_xyz_offset(km, axis='D', x=299.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)
+       (Dx,Dx_offset), (Dy, Dy_offset), (Dz_axis_position, Dz_min) = get_xyz_offset(km, axis='D', x=299.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.1)
    else:
        (Dx,Dx_offset) = (Dy, Dy_offset) = (Dz_axis_position, Dz_min) = (0, 0)
    
@@ -333,7 +338,7 @@ def run_alignment_script(align_A, align_B, align_C, align_D,  zSensor_Plate_offs
    g.abs_move(**{axis:-40})
    
    #find substrate boundaries
-   (substrate_left_x, substrate_top_y), (substrate_right_x, substrate_bottom_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart = 51.20, yStart = 36.46, zStart = -89.9, axis = axis, edges = 'All')
+   (substrate_left_x, substrate_top_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart = 51.20, yStart = 36.46, zStart = -89.9, axis = axis, edges = 'All')
    
    g.feed(25)
    g.abs_move(**{axis:-40})
@@ -354,7 +359,26 @@ def run_alignment_script(align_A, align_B, align_C, align_D,  zSensor_Plate_offs
    nozzle_change(Ax_groove, Ay_groove, Bx_groove, By_groove, Cx_groove, Cy_groove, 
             Dx_groove, Dy_groove, profilometer_x_groove_new, profilometer_y_groove_new, nozzles = 'pa')
    
-   g.abs_move(A=zA)
+   #g.move(x=-30, y=10)
+   g.abs_move(A=(zA + 0.04))
+   #g.set_valve(num = 0, value = 0)
+   #pb.set_pressure(com_port = 4, value = 5)
+   #pb.toggle_pressure(4)
+   #g.feed(4)
+   #g.set_valve(num = 0, value = 1)
+   #g.dwell(0.2)
+   #g.move(x=60)
+   #g.set_valve(num = 0, value = 0)
+   #g.move(A=3)
+   #g.feed(15)
+   #g.move(x=-60, y=-25)
+   #g.abs_move(A=(zA + 0.01))
+   #g.feed(4)
+   #g.set_valve(num = 0, value = 1)
+   #g.dwell(0.2)
+   #g.move(x=60)
+   #g.set_valve(num = 0, value = 0)
+   #g.move(A=3)
    #do profiling array
    
    #make cal file
@@ -369,7 +393,7 @@ def run_alignment_script(align_A, align_B, align_C, align_D,  zSensor_Plate_offs
    #print 'prof substrate z: ' (substrate_z_pos)
 
   
-run_alignment_script(align_A='yes', align_B='no', align_C='no', align_D='no', zSensor_Plate_offset = 42.4574, prof_ref_cal = 96.03958, Rz_axis_position = -43.099992493421, Rz_min=+02.82200, Rx_offset=1.7944, Rx = 586.075, Ry = 367.82, Ry_offset = 0.64815, Rx_groove = 400.2418, Ry_groove = 342.4803, Substrate_xRef = 37, Substrate_yRef = -26, x_zref = 54.588, y_zref = 280.322 , profilometer_x_groove_old = 70.4999, profilometer_y_groove_old = 327.850046, start_zref = -94, axis = 'D')         
+run_alignment_script(align_A='yes', align_B='no', align_C='no', align_D='no', zSensor_Plate_offset = 42.8854, prof_ref_cal = 96.03958, Rz_axis_position = -43.099992493421, Rz_min=+02.82200, Rx_offset=1.7944, Rx = 586.075, Ry = 367.82, Ry_offset = 0.64815, Rx_groove = 400.2418, Ry_groove = 342.4803, Substrate_xRef = 37, Substrate_yRef = -26, x_zref = 54.588, y_zref = 280.322 , profilometer_x_groove_old = 70.4999, profilometer_y_groove_old = 327.850046, start_zref = -94, axis = 'D')         
 #(substrate_left_x, substrate_top_y), (substrate_right_x, substrate_bottom_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart = 51.20, yStart = 36.46, zStart = -89.9, axis = 'D', edges = 'All')   
 #print (substrate_left_x, substrate_top_y)   
 #(profilometer_x_groove_new, profilometer_y_groove_new) = xy_align_profilometer(kp, axis = 'D')
@@ -379,5 +403,4 @@ run_alignment_script(align_A='yes', align_B='no', align_C='no', align_D='no', zS
    
 kp.disconnect()   
 km.disconnect()
-  
-   
+pb.disconnect() 
