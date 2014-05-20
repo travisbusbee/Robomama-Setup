@@ -280,6 +280,7 @@ def run_alignment_script(align_A, align_B, align_C, align_D,  zSensor_Plate_offs
    #g.abs_move(**{axis:-15})
    g.write('POSOFFSET CLEAR X Y U A B C D')
    g.abs_move(A=-0.5, B=-0.5, C=-0.5, D=-0.5)
+   Az_axis_position, Az_min, Ax, Ax_offset, Ay, Ay_offset = -35.4000021246, 2.9093, 586.075, 1.5, 367.82, 1.5
    if align_A =='yes':
        (Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(km, axis='A', x=586.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1, sweep_speed = 0.025)
    else:
@@ -297,6 +298,8 @@ def run_alignment_script(align_A, align_B, align_C, align_D,  zSensor_Plate_offs
    else:
        (Dx,Dx_offset) = (Dy, Dy_offset) = (Dz_axis_position, Dz_min) = (0, 0)
    
+  
+
    g.feed(25)
    g.abs_move(**{axis:-0.5})
    
@@ -375,11 +378,14 @@ def run_alignment_script(align_A, align_B, align_C, align_D,  zSensor_Plate_offs
    #print 'prof substrate z: ' (substrate_z_pos)
    return x_offset, y_offset, substrate_left_x, substrate_bottom_y
   
-x_offset, y_offset, substrate_left_x, substrate_bottom_y =run_alignment_script(align_A='yes', align_B='no', align_C='no', align_D='no', zSensor_Plate_offset = 42.8854, prof_ref_cal = 96.03958, Rz_axis_position = -43.099992493421, Rz_min=+02.82200, Rx_offset=1.7944, Rx = 586.075, Ry = 367.82, Ry_offset = 0.64815, Rx_groove = 400.2418, Ry_groove = 342.4803, Substrate_xRef = 37, Substrate_yRef = 26, x_zref = 54.588, y_zref = 280.322 , profilometer_x_groove_old = 70.4999, profilometer_y_groove_old = 327.850046, start_zref = -94, axis = 'D')         
+x_offset, y_offset, substrate_left_x, substrate_bottom_y =run_alignment_script(align_A='no', align_B='no', align_C='no', align_D='no', zSensor_Plate_offset = 42.8854, prof_ref_cal = 96.03958, Rz_axis_position = -43.099992493421, Rz_min=+02.82200, Rx_offset=1.7944, Rx = 586.075, Ry = 367.82, Ry_offset = 0.64815, Rx_groove = 400.2418, Ry_groove = 342.4803, Substrate_xRef = 37, Substrate_yRef = 26, x_zref = 54.588, y_zref = 280.322 , profilometer_x_groove_old = 70.4999, profilometer_y_groove_old = 327.850046, start_zref = -94, axis = 'D')         
 surface = profile_surface(g, kp, x_start=substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start=substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52, y_step = 10)
 
 write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
                    y_step = 10, x_offset = x_offset, y_offset = y_offset, mode='w+', ref_zero=True)
+                   
+write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
+                   y_step = 10, x_offset = x_offset, y_offset = y_offset, mode='a', ref_zero=True)
 #(substrate_left_x, substrate_top_y), (substrate_right_x, substrate_bottom_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart = 51.20, yStart = 36.46, zStart = -89.9, axis = 'D', edges = 'All')   
 #print (substrate_left_x, substrate_top_y)   
 #(profilometer_x_groove_new, profilometer_y_groove_new) = xy_align_profilometer(kp, axis = 'D')
