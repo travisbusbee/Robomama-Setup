@@ -3,6 +3,9 @@ from mecode.devices.keyence_micrometer import KeyenceMicrometer
 from mecode.devices.efd_pressure_box import EFDPressureBox
 from mecode import G
 from mecode.utils import profile_surface , write_cal_file
+import pickle
+from slidedata import *
+f = open("slide_data.txt", "w")
 kp = KeyenceProfilometer('COM3') 
 km = KeyenceMicrometer('COM8')
 pb = EFDPressureBox('COM4')
@@ -408,7 +411,7 @@ def run_alignment_script(Substrate_Guess, align_A, align_B, align_C, align_D,  z
    return Ax_offset, Ay_offset, Bx_offset, By_offset, Cx_offset, Cy_offset, Dx_offset, Dy_offset, substrate_left_x, substrate_bottom_y
 
   
-def profile_coverslips(kp, profile_many_substrates, x_dist_from_left, y_dist_from_bot, rows, columns, row_dist, column_dist, dwell):    
+def profile_coverslips(kp, f, profile_many_substrates, x_dist_from_left, y_dist_from_bot, rows, columns, row_dist, column_dist, dwell):    
     g.feed(30)
     g.abs_move(x=(substrate_left_x + x_dist_from_left), y= (substrate_bottom_y+y_dist_from_bot))
     profilometer_center = find_profilometer_center(kp, axis = 'D', zStart = -80, step = 1, dwell = 0.1,  speed = 5, floor = -100)
@@ -431,22 +434,22 @@ def profile_coverslips(kp, profile_many_substrates, x_dist_from_left, y_dist_fro
     profile_many_substrates.close()    
               
               
-Ax_offset, Ay_offset, Bx_offset, By_offset, Cx_offset, Cy_offset, Dx_offset, Dy_offset, substrate_left_x, substrate_bottom_y =run_alignment_script(Substrate_Guess, align_A=True, align_B=False, align_C=False, align_D=False,  zSensor_Plate_offset = 42.8854, prof_ref_cal = 96.03958, Rz_axis_position = -43.099992493421, Rz_min=+02.82200, Rx_offset=1.7944, Rx = 586.075, Ry = 367.82, Ry_offset = 0.64815, Rx_groove = 400.2418, Ry_groove = 342.4803, Substrate_xRef = 37, Substrate_yRef = 26, x_zref = 54.588, y_zref = 280.322 , profilometer_x_groove_old = 70.4999, profilometer_y_groove_old = 327.850046, start_zref = -94, axis = 'D')         
+Ax_offset, Ay_offset, Bx_offset, By_offset, Cx_offset, Cy_offset, Dx_offset, Dy_offset, substrate_left_x, substrate_bottom_y =run_alignment_script(Substrate_Guess, align_A=True, align_B=True, align_C=False, align_D=False,  zSensor_Plate_offset = 42.8854, prof_ref_cal = 96.03958, Rz_axis_position = -43.099992493421, Rz_min=+02.82200, Rx_offset=1.7944, Rx = 586.075, Ry = 367.82, Ry_offset = 0.64815, Rx_groove = 400.2418, Ry_groove = 342.4803, Substrate_xRef = 37, Substrate_yRef = 26, x_zref = 54.588, y_zref = 280.322 , profilometer_x_groove_old = 70.4999, profilometer_y_groove_old = 327.850046, start_zref = -94, axis = 'D')         
 
 profile_coverslips(kp, profile_many_substrates, x_dist_from_left = 11, y_dist_from_bot = 11, rows = 3, columns = 5, row_dist = 30, column_dist = 30, dwell = 0.5)
 surface = profile_surface(g, kp, x_start=substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start=substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52, y_step = 10)
 
-write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
-                   y_step = 10, x_offset = Ax_offset, y_offset = Ay_offset, mode='w+', ref_zero=True)
-                   
-write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
-                   y_step = 10, x_offset = Bx_offset, y_offset = By_offset, mode='a', ref_zero=True)
-
-write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
-                   y_step = 10, x_offset = Cx_offset, y_offset = Cy_offset, mode='a', ref_zero=True)
-
-write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
-                   y_step = 10, x_offset = Dx_offset, y_offset = Dy_offset, mode='a', ref_zero=True)
+#write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
+#                   y_step = 10, x_offset = Ax_offset, y_offset = Ay_offset, mode='w+', ref_zero=True)
+#                   
+#write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
+#                   y_step = 10, x_offset = Bx_offset, y_offset = By_offset, mode='a', ref_zero=True)
+#
+#write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
+#                   y_step = 10, x_offset = Cx_offset, y_offset = Cy_offset, mode='a', ref_zero=True)
+#
+#write_cal_file('C:\Users\Lewis Group\Desktop\Calibration\CAL_output.cal', surface, x_start= substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start = substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52,
+#                   y_step = 10, x_offset = Dx_offset, y_offset = Dy_offset, mode='a', ref_zero=True)
 
 
 #(substrate_left_x, substrate_top_y), (substrate_right_x, substrate_bottom_y), (prof_substrate_start)=  identify_substrate_location(kp, xStart = 51.20, yStart = 36.46, zStart = -89.9, axis = 'D', edges = 'All')   
