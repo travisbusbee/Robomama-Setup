@@ -319,11 +319,11 @@ def run_alignment_script(Substrate_Guess, align_A, align_B, align_C, align_D,  z
    g.abs_move(A=-0.5, B=-0.5, C=-0.5, D=-0.5)
    Az_axis_position, Az_min, Ax, Ax_offset, Ay, Ay_offset = -35.4000021246, 2.9093, 586.075, 1.5, 367.82, 1.5
    if align_A is True:
-       (Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(km, axis='A', x=586.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1, sweep_speed = 0.25)
+       (Ax,Ax_offset), (Ay, Ay_offset), (Az_axis_position, Az_min) = get_xyz_offset(km, axis='A', x=586.075, y=367.82, zStart= -15, floor = -49.75, speed_fast = 10, speed_slow = 2, zStep1 = 0.25, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1, sweep_speed = 0.1)
    else:
        (Ax,Ax_offset) = (Ay, Ay_offset) = (Az_axis_position, Az_min) = (0, 0)
    if align_B is True:
-       (Bx,Bx_offset), (By, By_offset), (Bz_axis_position, Bz_min) = get_xyz_offset(km, axis='B', x=482.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.25)
+       (Bx,Bx_offset), (By, By_offset), (Bz_axis_position, Bz_min) = get_xyz_offset(km, axis='B', x=482.075, y=367.82, zStart= -15, floor = -49.25, speed_fast = 10, speed_slow = 2, zStep1 = 1, zStep2 = 0.1, backstep = 3.5, downstep = 0.4, dwell = 0, sweep_range = 1.5, sweep_speed = 0.025)
    else:
        (Bx,Bx_offset) = (By, By_offset) = (Bz_axis_position, Bz_min) = (0, 0)
    if align_C is True:
@@ -424,6 +424,7 @@ def profile_coverslips(kp, substrate_left_x, substrate_bottom_y, profile_many_su
     g.feed(30)
     g.abs_move(x=(substrate_left_x + x_dist_from_left), y= (substrate_bottom_y+y_dist_from_bot))
     profilometer_center = find_profilometer_center(kp, axis = 'D', zStart = -80, step = 1, dwell = 0.1,  speed = 5, floor = -100)
+    g.dwell(2)
     ref_value = kp.read()
     profile_many_substrates = open(profile_many_substrates, 'w+')
     count = 0
@@ -455,17 +456,38 @@ def profile_coverslips(kp, substrate_left_x, substrate_bottom_y, profile_many_su
     data.close()          
     return(x_dist_from_left, y_dist_from_bot)
 
+
+g.write('POSOFFSET CLEAR X Y U A B C D')
+#run allignment script
 zA, Ax_offset, Ay_offset, zB, Bx_offset, By_offset, zC, Cx_offset, Cy_offset, zD, Dx_offset, Dy_offset, substrate_left_x, substrate_bottom_y =run_alignment_script(Substrate_Guess, align_A=True, align_B=True, align_C=False, align_D=False,  zSensor_Plate_offset = 42.8854, prof_ref_cal = 96.03958, Rz_axis_position = -43.099992493421, Rz_min=+02.82200, Rx_offset=1.7944, Rx = 586.075, Ry = 367.82, Ry_offset = 0.64815, Rx_groove = 400.2418, Ry_groove = 342.4803, Substrate_xRef = 11, Substrate_yRef = 11, x_zref = 54.588, y_zref = 280.322 , profilometer_x_groove_old = 70.4999, profilometer_y_groove_old = 327.850046, start_zref = -94, axis = 'D')         
 
 
-#Ax_offset, Ay_offset, Bx_offset, By_offset, Cx_offset, Cy_offset, Dx_offset, Dy_offset, substrate_left_x, substrate_bottom_y = (
- #                   20, -5, 30, -5, 20, -5, 20, -5, 31.849, 111.3113)
-(x_dist_from_left, y_dist_from_bot) = profile_coverslips(kp, substrate_left_x, substrate_bottom_y, profile_many_substrates, x_dist_from_left = 11, y_dist_from_bot = 11, rows = 3, columns = 5, row_dist = 30, column_dist = 30, dwell = 0.5)
 
+
+
+#prolife slide array
+substrate_left_x=31.6493198303
+substrate_bottom_y=111.711050423
+
+(x_dist_from_left, y_dist_from_bot) = profile_coverslips(kp, substrate_left_x, substrate_bottom_y, profile_many_substrates, x_dist_from_left = 11, y_dist_from_bot = 11, rows = 3, columns = 5, row_dist = 30, column_dist = 30, dwell = 1)
+#move nozzle a to manual zero location
 g.feed(30)
 g.abs_move(x=(substrate_left_x + x_dist_from_left), y=(substrate_bottom_y+y_dist_from_bot))
-g.move(x=Ax_offset, y=Ay_offset)
-g.abs_move(A=(zA + 0.2))
+g.move(x=Bx_offset, y=By_offset)
+g.abs_move(A=(zB + 0.2))
+
+#put in arbitrary values for skipping alligning
+
+#Ax_offset, Ay_offset, Bx_offset, By_offset, Cx_offset, Cy_offset, Dx_offset, Dy_offset, substrate_left_x, substrate_bottom_y = (
+ #                   20, -5, 30, -5, 20, -5, 20, -5, 31.849, 111.3113)
+
+
+
+
+
+
+
+
 #surface = profile_surface(g, kp, x_start=substrate_left_x + 2, x_stop = substrate_left_x + 62, x_step = 10, y_start=substrate_bottom_y + 2, y_stop = substrate_bottom_y + 52, y_step = 10)
 
 

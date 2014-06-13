@@ -17,8 +17,8 @@ g = G(
 # Cell allignment lines on 22mm slides
 data = open("slide_data.txt", "r")
 align_data = open("align_data.txt", "r")
-
-z_ref = -83.882370
+ 
+z_ref = -76.452187
 x_dist_from_left = 11
 y_dist_from_bot = 11
 
@@ -27,6 +27,13 @@ surface_array = pickle.load(data)
 alignment_array = pickle.load(align_data)
 zA, Ax_offset, Ay_offset, zB, Bx_offset, By_offset, zC, Cx_offset, Cy_offset, zD, Dx_offset, Dy_offset, substrate_left_x, substrate_bottom_y = alignment_array.profiles
 
+
+z_ref_keyence = zB
+z_dif = z_ref - z_ref_keyence
+zA = zA + z_dif
+zB = z_ref#zB + z_dif
+zC= zC + z_dif
+zD = zD + zD
 center_x = substrate_left_x + Ax_offset + x_dist_from_left
 center_y = substrate_bottom_y + Ay_offset + y_dist_from_bot
 column_spacing = 30
@@ -35,6 +42,8 @@ rowspacing = -30
 array_centerpoints = ((center_x + column_spacing*0, center_y + rowspacing *0), (center_x + column_spacing*1, center_y + rowspacing *0), (center_x + column_spacing*2, center_y + rowspacing *0),(center_x + column_spacing*3, center_y + rowspacing *0), (center_x + column_spacing*4, center_y + rowspacing *0),
                         (center_x + column_spacing*0, center_y + rowspacing *1), (center_x + column_spacing*1, center_y + rowspacing *1), (center_x + column_spacing*2, center_y + rowspacing *1),(center_x + column_spacing*3, center_y + rowspacing *1), (center_x + column_spacing*4, center_y + rowspacing *1),
                         (center_x + column_spacing*0, center_y + rowspacing *2), (center_x + column_spacing*1, center_y + rowspacing *2), (center_x + column_spacing*2, center_y + rowspacing *2),(center_x + column_spacing*3, center_y + rowspacing *2), (center_x + column_spacing*4, center_y + rowspacing *2))
+print substrate_left_x
+print  substrate_bottom_y 
 #print array_centerpoints
 #print surface_array.profiles
 #print alignment_array.profiles
@@ -76,23 +85,23 @@ cantilever_width = 3.5
 cantilever_length = 4.5
 
 
-base_height=(0.02,)*15#(0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+base_height=(0.02,)*15 #(0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
              #0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01)
 
-base_pressure=(4.8,)*15#(5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2)*2#(6.2,)*8+(6.1,)*8#
+base_pressure=(11.5,)*15 #(5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2)*2#(6.2,)*8+(6.1,)*8#
                
-base_speed=((4,)*15)
+base_speed=(4,)*15
 
-base_spacing = 0.4
+base_spacing = 0.3875
 
 
-cell_groove_height=(0.025,)*15
+cell_groove_height=(0.022,)*15
 
-cell_groove_pressure=(4.8,)*15
+cell_groove_pressure=(18.2,)*15
                
 cell_groove_speed=(4,)*15
 
-cell_groove_spacing=(0.040, 0.050, 0.060, 0.070, 0.080, 0.040, 0.050, 0.060, 0.070, 0.080, 0.040, 0.050, 0.060, 0.070, 0.080)
+cell_groove_spacing=(0.04, 0.030, 0.040, 0.060, 0.070, 0.080, 0.040, 0.050, 0.060, 0.070, 0.080, 0.040, 0.050, 0.060, 0.070, 0.080)
 
 
 def meander_notail(x, y, z, spacing, orientation, tail, speed, clip_direction, nozzle, valve, dwell = 0.5):
@@ -107,7 +116,8 @@ def meander_notail(x, y, z, spacing, orientation, tail, speed, clip_direction, n
     if valve is not None:
         g.set_valve(num = valve, value = 0) 
     g.dwell(0.3)
-    
+    g.clip(axis=nozzle, direction=clip_direction, height=5)
+
                                                                                                 
 def meander_tail(x, y, z, spacing, orientation, tail, speed, clip_direction, nozzle, valve, dwell = 0.5):
     g.feed(30)
@@ -179,29 +189,37 @@ def nozzle_change(nozzles = 'ab'):
 
 def base_all_22mm_slides(nozzle, valve):
     
-    for i in range(0,7):
+    for i in range(1, 15):
         g.feed(30)
         g.abs_move(*array_centerpoints[i])
         g.move(x=-8,y=6)
         g.set_pressure(pressure_box, base_pressure[i])
         meander_tail (x=cantilever_width, y=-cantilever_length, z=(base_height[i]+surface_array.profiles[i]), spacing=base_spacing, orientation = 'y', tail = 1, speed=base_speed[i], clip_direction = '+y', nozzle = nozzle, valve = valve, dwell = 0.75 )
+        g.feed(30)
+        g.abs_move(**{nozzle:5})
         g.move(x=2,y=-4)
         g.set_pressure(pressure_box, base_pressure[i])
         meander_tail (x=cantilever_width, y=-cantilever_length, z=(base_height[i]+surface_array.profiles[i]), spacing=base_spacing, orientation = 'y', tail = 1, speed=base_speed[i], clip_direction = '+y', nozzle = nozzle, valve = valve, dwell = 0.75 )
+        g.feed(30)
+        g.abs_move(**{nozzle:5})
         
 def cell_groove_all_22mm_slides(nozzle, valve):
     
-    for i in range(0,7):
+    
+    for i in range(3,15):
         g.feed(30)
         g.abs_move(*array_centerpoints[i])
         nozzle_change(nozzles = 'ab')
         g.move(x=-8,y=6)
         g.set_pressure(pressure_box, base_pressure[i])
         meander_notail(x=cantilever_width, y=-cantilever_length, z=(cell_groove_height[i]+surface_array.profiles[i]), spacing=cell_groove_spacing[i], orientation= 'y', tail= 1, speed=cell_groove_speed[i], clip_direction = '+y', nozzle = nozzle, valve = valve, dwell = 0.5)
+        g.feed(30)
+        g.abs_move(**{nozzle:5})
         g.move(x=2,y=-4)
         g.set_pressure(pressure_box, base_pressure[i])
         meander_notail(x=cantilever_width, y=-cantilever_length, z=(cell_groove_height[i]+surface_array.profiles[i]), spacing=(cell_groove_spacing[i]+0.05), orientation= 'y', tail= 1, speed=cell_groove_speed[i], clip_direction = '+y', nozzle = nozzle, valve = valve, dwell = 0.5)
-        
+        g.feed(30)
+        g.abs_move(**{nozzle:5})
 def set_home_in_z():
     g.write('POSOFFSET CLEAR X Y U A B C D')
     g.feed(30)
@@ -214,9 +232,10 @@ def clear_XYhome():
 
 
 #lets go
+g.toggle_pressure(pressure_box)
 g.feed(40)
 set_home_in_z()
-base_all_22mm_slides(nozzle= 'A', valve = 0)
+#base_all_22mm_slides(nozzle= 'A', valve = 0)
 #nozzle_change(nozzles = 'ab')
 #
 cell_groove_all_22mm_slides(nozzle= 'B', valve = 1)
@@ -237,4 +256,5 @@ cell_groove_all_22mm_slides(nozzle= 'B', valve = 1)
 #g.abs_move(*array_centerpoints[1])
 #nozzle_change(nozzles = 'ab')
 #g.abs_move(B=surface_array.profiles[1])
+g.toggle_pressure(pressure_box)
 g.teardown()
